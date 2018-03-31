@@ -4,13 +4,19 @@
 
 #include <curses.h>
 #include <iostream>
+#include <vector>
+#include <time.h>
+#include <stdlib.h>
 
 using std::cin;
 using std::cout;
 using std::endl;
+using std::vector;
 
 void buildRow(int y, int x, struct Collection *c);
 void select(int num_selected, struct Collection *c);
+void playerChoice(char *selection, int *num_selected, int row);
+void computerChoice(char *selection, int *num_selected, int row, vector<Collection> &gameboard);
 
 struct Collection{
 	char label;
@@ -19,6 +25,10 @@ struct Collection{
 };
 
 int main(){
+	bool turn = 0;  // 0 is player 1 (user), 1 is player 2 (computer)
+	vector<Collection> gameboard;		// holds each collection of tokens
+	srand(time(NULL));
+	
 	initscr();	//curses mode
 	raw();  //disable line buffering (one character at a time)
 	//cbreak();  //alternate to raw(); 
@@ -64,26 +74,32 @@ int main(){
 	C.label = 'C';
 	C.number_left = 5;
 	C.color = 6;
+	gameboard.push_back(A);
+	gameboard.push_back(B);
+	gameboard.push_back(C);
 	
 	//Window UI
 	//WINDOW *win = newwin(1, col, row-1, 0);
 	//wbkgd(win, COLOR_PAIR(1));
 	
-	int round = 5;
-	while(round > 0){
-		buildRow(5,10,&A);
-		buildRow(7,10,&B);
-		buildRow(9,10,&C);
+	while(gameboard[0].number_left + gameboard[1].number_left + gameboard[2].number_left > 0){
+		char selection;
+		int num_selected;
 		
-		mvaddstr(row-1, 0, "Select collection: ");
-		refresh();
-		char selection = getch();
-		clrtoeol();		//clear line
-		mvaddstr(row-1, 0, "Number to remove from ");
-		addch(selection);
-		refresh();
-		int num_selected = getch();
-		num_selected -= 48;
+		
+		buildRow(5,10,&gameboard[0]);
+		buildRow(7,10,&gameboard[1]);
+		buildRow(9,10,&gameboard[2]);
+		
+		switch(turn){
+			case 0:
+				playerChoice(&selection, &num_selected, row);
+				break;
+			case 1:
+				computerChoice(&selection, &num_selected, row, gameboard);
+				break;
+		}
+		
 		//int num_selected = getch();
 		//wprintw(win, "Select collection: ");
 		//wrefresh(win);
@@ -91,17 +107,17 @@ int main(){
 		switch(selection){
 			case 'a':
 			case 'A':
-				select(num_selected, &A);
+				select(num_selected, &gameboard[0]);  //&A
 				//A.number_left--;
 				break;
 			case 'b':
 			case 'B':
-				select(num_selected, &B);
+				select(num_selected, &gameboard[1]);
 				//B.number_left--;
 				break;
 			case 'c':
 			case 'C':
-				select(num_selected, &C);
+				select(num_selected, &gameboard[2]);
 				//C.number_left--;
 				break;
 			default:
@@ -109,12 +125,57 @@ int main(){
 		}
 		erase();
 		//werase(win);
-		round --;
+		turn = !turn;		//change turn;
+	}
+	
+	if(turn == 0){
+		mvaddstr(row-1, 0, "YOU WIN!");
+	}
+	else{
+		mvaddstr(row-1, 0, "COMPUTER WINS!");
 	}
 	
 	getch();
 	endwin();		// free memory and restore terminal settings
 	return 0;
+}
+
+void playerChoice(char *selection, int *num_selected, int row){
+	mvaddstr(row-1, 0, "Select collection: ");
+	refresh();
+	*selection = getch();
+	clrtoeol();		//clear line
+	mvaddstr(row-1, 0, "Number to remove from ");
+	addch(*selection);
+	refresh();
+	*num_selected = getch();
+	*num_selected -= 48;
+}
+
+void computerChoice(char *selection, int *num_selected, int row, vector<Collection> &gameboard){
+	int selectionInt;  //collection choice
+	do{
+		selectionInt = rand() % gameboard.size();
+		//addch(selectionInt + 65);
+		//refresh();
+	}while(gameboard[selectionInt].number_left == 0);
+	
+	struct Collection *cPtr;
+	cPtr = &(gameboard[selectionInt]);
+	*num_selected = rand() % cPtr->number_left + 1;
+	*selection = cPtr->label;
+	//*selection = selectionInt += 65;
+	
+	//output
+	mvaddstr(row-1, 0, "Computer chooses collection ");
+	addch(*selection);
+	refresh();
+	getch();
+	clrtoeol();		//clear line
+	mvaddstr(row-1, 0, "Computer chooses to remove ");
+	printw("%d",*num_selected);
+	refresh();
+	getch();
 }
 
 void buildRow(int y, int x, struct Collection *c){
@@ -140,3 +201,4 @@ void select(int num_selected, struct Collection *c){
 		}
 	}
 }
+
