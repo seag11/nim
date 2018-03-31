@@ -10,6 +10,7 @@ using std::cout;
 using std::endl;
 
 void buildRow(int y, int x, struct Collection *c);
+void select(int num_selected, struct Collection *c);
 
 struct Collection{
 	char label;
@@ -22,7 +23,7 @@ int main(){
 	raw();  //disable line buffering (one character at a time)
 	//cbreak();  //alternate to raw(); 
 	keypad(stdscr, TRUE);  //capture special keystrokes
-	//noecho();  //inverse of echo()
+	noecho();  //inverse of echo()
 	
 	int row, col;
 	getmaxyx(stdscr, row, col);		//get number of rows and columns in the window
@@ -64,26 +65,52 @@ int main(){
 	C.number_left = 5;
 	C.color = 6;
 	
-	buildRow(5,10,&A);
-	buildRow(7,10,&B);
-	buildRow(9,10,&C);
-	
-	//mvaddstr(row-1, 0, "Select collection: ");
-	//refresh();
-	
 	//Window UI
 	//WINDOW *win = newwin(1, col, row-1, 0);
-	WINDOW *win = newwin(1, col, row-1, 0);
-	//box(win, 0,0);   //prints too many q's
-	wbkgd(win, COLOR_PAIR(1));
-	wprintw(win, "Select collection: ");
-	wrefresh(win);
-	getch();
+	//wbkgd(win, COLOR_PAIR(1));
 	
-	//char selection = getch();
-	//cout << selection << endl;
-	
-	refresh();	
+	int round = 5;
+	while(round > 0){
+		buildRow(5,10,&A);
+		buildRow(7,10,&B);
+		buildRow(9,10,&C);
+		
+		mvaddstr(row-1, 0, "Select collection: ");
+		refresh();
+		char selection = getch();
+		clrtoeol();		//clear line
+		mvaddstr(row-1, 0, "Number to remove from ");
+		addch(selection);
+		refresh();
+		int num_selected = getch();
+		num_selected -= 48;
+		//int num_selected = getch();
+		//wprintw(win, "Select collection: ");
+		//wrefresh(win);
+		
+		switch(selection){
+			case 'a':
+			case 'A':
+				select(num_selected, &A);
+				//A.number_left--;
+				break;
+			case 'b':
+			case 'B':
+				select(num_selected, &B);
+				//B.number_left--;
+				break;
+			case 'c':
+			case 'C':
+				select(num_selected, &C);
+				//C.number_left--;
+				break;
+			default:
+				break;
+		}
+		erase();
+		//werase(win);
+		round --;
+	}
 	
 	getch();
 	endwin();		// free memory and restore terminal settings
@@ -101,4 +128,15 @@ void buildRow(int y, int x, struct Collection *c){
 		addch(' ');
 	}
 	refresh();
+}
+
+void select(int num_selected, struct Collection *c){
+	for (int i=0; i<num_selected; i++){
+		if(c->number_left == 0){
+			break;
+		}
+		else{
+			c->number_left--;
+		}
+	}
 }
