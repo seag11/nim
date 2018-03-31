@@ -7,6 +7,7 @@
 #include <vector>
 #include <time.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 using std::cin;
 using std::cout;
@@ -146,7 +147,7 @@ void playerChoice(char *selection, int *num_selected, int row){
 	*selection = getch();
 	clrtoeol();		//clear line
 	mvaddstr(row-1, 0, "Number to remove from ");
-	addch(*selection);
+	addch(toupper(*selection));
 	refresh();
 	*num_selected = getch();
 	*num_selected -= 48;
@@ -167,15 +168,17 @@ void computerChoice(char *selection, int *num_selected, int row, vector<Collecti
 	//*selection = selectionInt += 65;
 	
 	//output
-	mvaddstr(row-1, 0, "Computer chooses collection ");
-	addch(*selection);
+	mvaddstr(row-1, 0, "Computer selects collection ");
+	//addch(*selection);
+	printw("%c",toupper(*selection));
 	refresh();
-	getch();
+	move(row-1,0);
+	usleep(1500000);
 	clrtoeol();		//clear line
 	mvaddstr(row-1, 0, "Computer chooses to remove ");
 	printw("%d",*num_selected);
 	refresh();
-	getch();
+	usleep(1500000);
 }
 
 void buildRow(int y, int x, struct Collection *c){
