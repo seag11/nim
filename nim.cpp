@@ -25,6 +25,8 @@ void select(int num_selected, char selection, vector<Collection*> &gameboard);
 void playerChoice(char *selection, int *num_selected, int row);
 void computerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
 void buildRows(int y, int x, vector<Collection*> &gameboard);
+bool isGameOver(vector<Collection*> &gameboard);
+void title(int y, int x);
 
 int main(){
 	bool turn = 0;  // 0 is player 1 (user), 1 is player 2 (computer)
@@ -62,12 +64,15 @@ int main(){
 	init_pair(9, COLOR_BLUE, COLOR_BLUE);
 	init_pair(10, COLOR_RED, COLOR_RED);
 	
+	curs_set(0);	//hide cursor
 	wbkgd(stdscr, COLOR_PAIR(1));  //fill background	
-	move(1,col/2);
+	title(row, col);
+	
+	//move(1,col/2);
 	//printw("NIM");
-	addch('N' | A_BOLD);
-	addch('I' | A_BOLD | COLOR_PAIR(2));
-	addch('M' | A_BOLD | COLOR_PAIR(3));
+	//addch('N' | A_BOLD);
+	//addch('I' | A_BOLD | COLOR_PAIR(2));
+	//addch('M' | A_BOLD | COLOR_PAIR(3));
 
 	//generate between 3 - 5 collections of tokens
 	int num_collections = rand() % 3 + 3;
@@ -84,7 +89,11 @@ int main(){
 	//WINDOW *win = newwin(1, col, row-1, 0);
 	//wbkgd(win, COLOR_PAIR(1));
 	
-	while(gameboard[0]->number_left + gameboard[1]->number_left + gameboard[2]->number_left > 0){
+	while(isGameOver(gameboard) == 0){
+		attron(A_BOLD | COLOR_PAIR(1));
+		move(1,col/3);
+		printw("G A M E   O F   N I M");
+		attroff(A_BOLD);
 		char selection;
 		int num_selected;
 		
@@ -134,11 +143,11 @@ int main(){
 }
 
 void playerChoice(char *selection, int *num_selected, int row){
-	mvaddstr(row-1, 0, "Select collection: ");
+	mvaddstr(row-1, 0, "Select collection ");
 	refresh();
 	*selection = getch();
 	clrtoeol();		//clear line
-	mvaddstr(row-1, 0, "Number to remove from ");
+	mvaddstr(row-1, 0, "Enter number to remove from ");
 	addch(toupper(*selection));
 	refresh();
 	*num_selected = getch();
@@ -210,5 +219,35 @@ void select(int num_selected, char selection, vector<Collection*> &gameboard){
 			gameboard[idx]->number_left--;
 		}
 	}
+}
+
+void title(int y, int x){
+	y = y/3;
+	move(y,x/3-4);
+	attron(COLOR_PAIR(1));
+	addstr("     /|  //   ||      /\\   /\\\\");
+	y = y+1;
+	move(y,x/3-4);
+	attron(COLOR_PAIR(2));
+	addstr("    //| //    ||     // \\ /  \\\\");
+	y= y + 1;
+	move(y,x/3-4);
+	attron(COLOR_PAIR(3));
+	addstr("   // |//     ||    //   \\    \\\\");
+	y = y + 1;
+	move(y, x/3-4);
+	addstr("  //  //      ||   //          \\\\");
+	refresh();
+	getch();
+	erase();
+}
+
+bool isGameOver(vector<Collection*> &gameboard){
+	for (int i=0; i<gameboard.size(); i++){
+		if(gameboard[i]->number_left > 0){
+			return false;
+		}
+	}
+	return true;
 }
 
