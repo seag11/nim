@@ -22,11 +22,12 @@ struct Collection{
 
 //void buildRow(int y, int x, struct Collection *c);
 void select(int num_selected, char selection, vector<Collection*> &gameboard);
-void playerChoice(char *selection, int *num_selected, int row);
+void playerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
 void computerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
 void buildRows(int y, int x, vector<Collection*> &gameboard);
 bool isGameOver(vector<Collection*> &gameboard);
 void title(int y, int x);
+bool boundsChecker(char selection, vector<Collection*> &gameboard);
 
 int main(){
 	bool turn = 0;  // 0 is player 1 (user), 1 is player 2 (computer)
@@ -68,12 +69,6 @@ int main(){
 	wbkgd(stdscr, COLOR_PAIR(1));  //fill background	
 	title(row, col);
 	
-	//move(1,col/2);
-	//printw("NIM");
-	//addch('N' | A_BOLD);
-	//addch('I' | A_BOLD | COLOR_PAIR(2));
-	//addch('M' | A_BOLD | COLOR_PAIR(3));
-
 	//generate between 3 - 5 collections of tokens
 	int num_collections = rand() % 3 + 3;
 	for (int i=0; i<num_collections; i++){
@@ -104,7 +99,7 @@ int main(){
 		
 		switch(turn){
 			case 0:
-				playerChoice(&selection, &num_selected, row);
+				playerChoice(&selection, &num_selected, row, gameboard);
 				break;
 			case 1:
 				computerChoice(&selection, &num_selected, row, gameboard);
@@ -137,21 +132,25 @@ int main(){
 		gameboard[i] = NULL;
 	}
 	
-	
 	endwin();		// free memory and restore terminal settings
 	return 0;
 }
 
-void playerChoice(char *selection, int *num_selected, int row){
-	mvaddstr(row-1, 0, "Select collection ");
-	refresh();
-	*selection = getch();
+void playerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard){
+	do{
+		mvaddstr(row-1, 0, "Select collection ");
+		refresh();
+		*selection = getch();
+	}while (!boundsChecker(*selection,gameboard));		//input validation
 	clrtoeol();		//clear line
-	mvaddstr(row-1, 0, "Enter number to remove from ");
-	addch(toupper(*selection));
-	refresh();
-	*num_selected = getch();
-	*num_selected -= 48;
+	do{
+		mvaddstr(row-1, 0, "Enter number to remove from ");
+		addch(toupper(*selection));
+		refresh();
+		*num_selected = getch();
+		*num_selected -= 48;
+	}while(*num_selected == 0);		//ensure number is positive
+	
 }
 
 void computerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard){
@@ -250,4 +249,23 @@ bool isGameOver(vector<Collection*> &gameboard){
 	}
 	return true;
 }
+
+bool boundsChecker(char selection, vector<Collection*> &gameboard){
+	bool flag = false;
+	selection = toupper(selection);
+	//validate selection is within bounds of gameboard
+	if(selection > gameboard[gameboard.size()-1]->label || selection < 'A'){
+		return false;
+	}
+	int idx = (int)selection;
+	idx -= 65;
+	//validate selection has tokens remaining
+	if(gameboard[idx]->number_left > 0){		
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
 
