@@ -1,6 +1,8 @@
-/****************
-* game of nim
-*****************/
+/************************
+* Game of Nim - Two-player strategy game
+* Each round, a player must select any number of tokens in a collection.
+* The player faced with the last token on the gameboard at the start of their round loses.
+************************/
 
 #include <curses.h>
 #include <iostream>
@@ -20,7 +22,6 @@ struct Collection{
 	int color;
 };
 
-//void buildRow(int y, int x, struct Collection *c);
 void select(int num_selected, char selection, vector<Collection*> &gameboard);
 void playerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
 void computerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
@@ -36,15 +37,11 @@ int main(){
 	
 	initscr();	//curses mode
 	raw();  //disable line buffering (one character at a time)
-	//cbreak();  //alternate to raw(); 
 	keypad(stdscr, TRUE);  //capture special keystrokes
 	noecho();  //inverse of echo()
 	
 	int row, col;
 	getmaxyx(stdscr, row, col);		//get number of rows and columns in the window
-	
-	//getyx(stdscr, row, rol);  //gets coordinates of cursor
-	//move(y, x+5) //moves the cursor
 	
 	//Colors
 	if(has_colors() == 0){
@@ -54,12 +51,12 @@ int main(){
 	}
 	
 	start_color();
-	init_pair(1, COLOR_MAGENTA, COLOR_WHITE);  //standard background
+	init_pair(1, COLOR_MAGENTA, COLOR_WHITE);  //labels 1-5
 	init_pair(2, COLOR_GREEN, COLOR_WHITE);
 	init_pair(3, COLOR_CYAN, COLOR_WHITE);
 	init_pair(4, COLOR_BLUE, COLOR_WHITE);
 	init_pair(5, COLOR_RED, COLOR_WHITE);
-	init_pair(6, COLOR_MAGENTA, COLOR_MAGENTA);	//box color
+	init_pair(6, COLOR_MAGENTA, COLOR_MAGENTA);	//tokens 6-10
 	init_pair(7, COLOR_GREEN, COLOR_GREEN);
 	init_pair(8, COLOR_CYAN, COLOR_CYAN);	
 	init_pair(9, COLOR_BLUE, COLOR_BLUE);
@@ -76,14 +73,9 @@ int main(){
 		gameboard.push_back(c);
 		gameboard[i]->label = (char)i + 65;
 		gameboard[i]->number_left = rand() % 5 + i + 1;
-		//gameboard[i]->number_left = 5;
 		gameboard[i]->color = i + 6;
 	}
-		
-	//Window UI
-	//WINDOW *win = newwin(1, col, row-1, 0);
-	//wbkgd(win, COLOR_PAIR(1));
-	
+			
 	while(isGameOver(gameboard) == 0){
 		attron(A_BOLD | COLOR_PAIR(1));
 		move(1,col/3);
@@ -93,9 +85,6 @@ int main(){
 		int num_selected;
 		
 		buildRows(5,10,gameboard);
-		//buildRow(5,10,gameboard[0]);
-		//buildRow(8,10,gameboard[1]);
-		//buildRow(11,10,gameboard[2]);
 		
 		switch(turn){
 			case 0:
@@ -106,14 +95,9 @@ int main(){
 				break;
 		}
 		
-		//int num_selected = getch();
-		//wprintw(win, "Select collection: ");
-		//wrefresh(win);
-		
 		select(num_selected, selection, gameboard);
 				
 		erase();
-		//werase(win);
 		turn = !turn;		//change turn;
 	}
 	
@@ -136,6 +120,9 @@ int main(){
 	return 0;
 }
 
+/*
+Function handles player's round
+*/
 void playerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard){
 	do{
 		mvaddstr(row-1, 0, "Select collection ");
@@ -153,23 +140,22 @@ void playerChoice(char *selection, int *num_selected, int row, vector<Collection
 	
 }
 
+/*
+Function handles computer's round
+*/
 void computerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard){
 	int selectionInt;  //collection choice
 	do{
 		selectionInt = rand() % gameboard.size();
-		//addch(selectionInt + 65);
-		//refresh();
 	}while(gameboard[selectionInt]->number_left == 0);
 	
 	struct Collection *cPtr;
 	cPtr = gameboard[selectionInt];
 	*num_selected = rand() % cPtr->number_left + 1;
 	*selection = cPtr->label;
-	//*selection = selectionInt += 65;
 	
 	//output
 	mvaddstr(row-1, 0, "Computer selects collection ");
-	//addch(*selection);
 	printw("%c",toupper(*selection));
 	refresh();
 	move(row-1,0);
@@ -181,13 +167,14 @@ void computerChoice(char *selection, int *num_selected, int row, vector<Collecti
 	usleep(1500000);
 }
 
-
+/*
+Creates gameboard
+*/
 void buildRows(int y, int x, vector<Collection*> &gameboard){
 	for (int i=0; i<gameboard.size();i++){
 		move(y,x);
 		addch(gameboard[i]->label | COLOR_PAIR(gameboard[i]->color - 5));
 		printw(" ");
-		//printw("num left: %d", gameboard[i]->number_left);		//debugging
 		for(int j=0; j<gameboard[i]->number_left; j++){
 			attron(COLOR_PAIR(gameboard[i]->color));
 			printw("  ");
@@ -206,6 +193,9 @@ void buildRows(int y, int x, vector<Collection*> &gameboard){
 	refresh();
 }	
 
+/*
+Decrements collection by number of tokens selected
+*/
 void select(int num_selected, char selection, vector<Collection*> &gameboard){
 	selection = toupper(selection);
 	int idx = (int)selection;
@@ -220,6 +210,9 @@ void select(int num_selected, char selection, vector<Collection*> &gameboard){
 	}
 }
 
+/*
+Prints game title
+*/
 void title(int y, int x){
 	y = y/3;
 	move(y,x/3-4);
@@ -241,6 +234,9 @@ void title(int y, int x){
 	erase();
 }
 
+/*
+Evaluates whether game is over by checking if all collections are empty
+*/
 bool isGameOver(vector<Collection*> &gameboard){
 	for (int i=0; i<gameboard.size(); i++){
 		if(gameboard[i]->number_left > 0){
@@ -250,8 +246,10 @@ bool isGameOver(vector<Collection*> &gameboard){
 	return true;
 }
 
+/*
+Validates player input
+*/
 bool boundsChecker(char selection, vector<Collection*> &gameboard){
-	bool flag = false;
 	selection = toupper(selection);
 	//validate selection is within bounds of gameboard
 	if(selection > gameboard[gameboard.size()-1]->label || selection < 'A'){
