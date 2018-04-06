@@ -1,7 +1,7 @@
 /************************
 * Game of Nim - Two-player strategy game
-* Each round, a player must select any number of tokens in a collection.
-* The player faced with the last token on the gameboard at the start of their round loses.
+* Each turn, a player may select any number of tokens in one collection.
+* The player who selects the last token on the gameboard wins.
 ************************/
 
 #include <curses.h>
@@ -22,9 +22,12 @@ struct Collection{
 	int color;
 };
 
+bool mode = 0;		// 0 for easy, 1 for hard
+
 void select(int num_selected, char selection, vector<Collection*> &gameboard);
 void playerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
-void computerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
+void computerChoiceEasy(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
+void computerChoiceHard(char *selection, int *num_selected, int row, vector<Collection*> &gameboard);
 void buildRows(int y, int x, vector<Collection*> &gameboard);
 bool isGameOver(vector<Collection*> &gameboard);
 void title(int y, int x);
@@ -91,7 +94,10 @@ int main(){
 				playerChoice(&selection, &num_selected, row, gameboard);
 				break;
 			case 1:
-				computerChoice(&selection, &num_selected, row, gameboard);
+				if(mode)
+					computerChoiceHard(&selection, &num_selected, row, gameboard);
+				else
+					computerChoiceEasy(&selection, &num_selected, row, gameboard);
 				break;
 		}
 		
@@ -101,7 +107,7 @@ int main(){
 		turn = !turn;		//change turn;
 	}
 	
-	if(turn == 0){
+	if(turn == 1){
 		mvaddstr(row-1, 0, "YOU WIN!");
 	}
 	else{
@@ -141,9 +147,9 @@ void playerChoice(char *selection, int *num_selected, int row, vector<Collection
 }
 
 /*
-Function handles computer's round
+Function handles computer's round - easy mode
 */
-void computerChoice(char *selection, int *num_selected, int row, vector<Collection*> &gameboard){
+void computerChoiceEasy(char *selection, int *num_selected, int row, vector<Collection*> &gameboard){
 	int selectionInt;  //collection choice
 	do{
 		selectionInt = rand() % gameboard.size();
@@ -153,6 +159,55 @@ void computerChoice(char *selection, int *num_selected, int row, vector<Collecti
 	cPtr = gameboard[selectionInt];
 	*num_selected = rand() % cPtr->number_left + 1;
 	*selection = cPtr->label;
+	
+	//output
+	mvaddstr(row-1, 0, "Computer selects collection ");
+	printw("%c",toupper(*selection));
+	refresh();
+	move(row-1,0);
+	usleep(1500000);
+	clrtoeol();		//clear line
+	mvaddstr(row-1, 0, "Computer chooses to remove ");
+	printw("%d",*num_selected);
+	refresh();
+	usleep(1500000);
+}
+
+/*
+Function handles computer's round using binary sum - hard mode
+*/
+void computerChoiceHard(char *selection, int *num_selected, int row, vector<Collection*> &gameboard){
+	int selectionInt;  //collection choice
+	int binarySum = 0;
+	for(int i=0; i<gameboard.size(); i++){
+		if(gameboard[i]->number_left > 0){
+			binarySum = binarySum ^ gameboard[i]->number_left;		
+		}
+	}
+	//printw("binarySum = %d", binarySum);  //debugging
+	
+	if(binarySum == 0){		//opponent is likely to win
+		do{
+			selectionInt = rand() % gameboard.size();
+		}while(gameboard[selectionInt]->number_left == 0);
+		struct Collection *cPtr;
+		cPtr = gameboard[selectionInt];
+		*num_selected = 1;
+		*selection = cPtr->label;
+	}
+	else{						//balance binary digital sum to 0
+		int collectionSum = 0;
+		for(int i=0; i<gameboard.size(); i++){
+			if(gameboard[i]->number_left > 0){
+				collectionSum = binarySum ^ gameboard[i]->number_left;
+				if(collectionSum < gameboard[i]->number_left){
+					*selection = gameboard[i]->label;
+					*num_selected = gameboard[i]->number_left - collectionSum;
+					break;
+				}
+			}
+		}
+	}
 	
 	//output
 	mvaddstr(row-1, 0, "Computer selects collection ");
@@ -211,7 +266,7 @@ void select(int num_selected, char selection, vector<Collection*> &gameboard){
 }
 
 /*
-Prints game title
+Prints game title screen
 */
 void title(int y, int x){
 	y = y/3;
@@ -230,7 +285,25 @@ void title(int y, int x){
 	move(y, x/3-4);
 	addstr("  //  //      ||   //          \\\\");
 	refresh();
-	getch();
+	
+	y = y + 4;
+	move(y, x/3 - 7);
+	addstr("Press ");
+	attron(A_BOLD);
+	printw("0");
+	attroff(A_BOLD);
+	addstr(" for easy mode");
+	attron(COLOR_PAIR(1));
+	addstr(" or ");
+	attron(A_BOLD);
+	printw("1");
+	attroff(A_BOLD);
+	addstr(" for hard mode");
+	int ch;
+	ch = getch();
+	if (ch == 49){
+		mode = 1;
+	}
 	erase();
 }
 
